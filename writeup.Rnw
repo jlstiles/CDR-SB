@@ -1,0 +1,292 @@
+\documentclass[titlepage]{article}
+% * <jl@jlstiles.com> 2018-06-14T00:26:17.458Z:
+%
+% ^.
+\usepackage[]{graphicx}
+\usepackage[]{color}
+
+\usepackage{amsmath,amsfonts,amssymb,amsthm,epsfig,epstopdf,titling,url,array}
+
+\makeatletter
+\setlength{\@fptop}{0pt}
+\makeatother
+
+\usepackage[section]{placeins}
+\usepackage{setspace}
+\singlespacing
+\theoremstyle{plain}
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{prop}[thm]{Proposition}
+\newtheorem*{cor}{Corollary}
+
+\theoremstyle{definition}
+\newtheorem{defn}{Definition}[section]
+\newtheorem{conj}{Conjecture}[section]
+\newtheorem{exmp}{Example}[section]
+\usepackage{placeins}
+
+\theoremstyle{remark}
+\newtheorem*{rem}{Remark}
+\newtheorem*{note}{Note}
+\makeatletter
+\def\maxwidth{ %
+  \ifdim\Gin@nat@width>\linewidth
+    \linewidth
+  \else
+    \Gin@nat@width
+  \fi
+}
+\makeatother
+
+\usepackage{framed}
+\definecolor{shadecolor}{rgb}{.97, .97, .97}
+\definecolor{messagecolor}{rgb}{0, 0, 0}
+\definecolor{warningcolor}{rgb}{1, 0, 1}
+\definecolor{errorcolor}{rgb}{1, 0, 0}
+
+\usepackage{alltt}
+\usepackage{enumitem}
+\usepackage{amsthm}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+
+\usepackage[style=authoryear,maxcitenames=2, doi=false]{biblatex}
+
+\bibliography{references}
+\newcommand{\noopsort}[2]{#2}
+
+\usepackage[letterpaper, portrait, lmargin=1in, rmargin=1in,
+bmargin = 1.35in, tmargin = 1.35in]{geometry}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage{float}
+
+\usepackage{caption}
+\def\changemargin#1#2{\list{}{\rightmargin#2\leftmargin#1}\item[]}
+\let\endchangemargin=\endlist
+\setlength{\parindent}{0pt}
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+
+\title{Mixed-effects Repeated Measures Simulations for Alzheimer's Patients}
+\author{Jonathan Levy}
+\begin{document}
+
+\begin{titlepage}
+
+\maketitle
+\end{titlepage}
+\section{Introduction}
+We aim to simulate alzheimer's data for Alzheimer's Disease patients with a baseline Mini Mental State Exam score of between 24 and 30, which translates to patients with a CDR-SB score of approximately between 0 and 4 (citation).  There are potentially many factors affecting the rate of increase in the CDR-SB score as well as potentially interactions of treatment with patient characteristics.  It suffices to say, the functional dependence of CDR-SB rate on patient characteristics and treatmet is not known, though we have literature available to us that shows the magnitude of various risk factors. We will call upon the literature to provide a framework for some known patient characteristics affecting CDR-SB progression, including APOE4 heterozygous or homozygous gene, which is strongly theorized to affect chances of developing alzheimer's disease and alzheimer's progression.  Gender has also been shown to have an association, though the direction is not consistent in the literature.  Here we assume gender adds a deleterious effect for females, as referenced by (citation). 
+
+\section{Alzheimer's Data}
+We consulted 
+
+We aim to simulate a clinical trial
+1. Review the main literature on CDR-SB and extract info about the rates of change and associated variations
+2. Write SAS programs to simulate clinical trials with the projected effect size by the sponsor, and then run statistical tests using the MMRM and report the proportion of positive trials
+3. Repeat Step 2 for 50\% of the projected effect size by the sponsor
+4. Summarize the simulation methods and final results from last 3 steps
+
+We will start with a basic model: start with model $Y_{i,t} = \beta_{0,i} + \alpha_{i,t} t + \epsilon_{i,t}$.  One could start by making the rate dependent on the baseline CDR-SB score. 
+
+The following code chunk shows the parameters of the data generating systems used for the simulations.  We envision a trial lasting 18 months with quarterly measurements of the participants.   
+<<echo = FALSE, eval = TRUE>>==
+echo = TRUE
+@
+
+<<echo = echo, eval = FALSE>>==
+library(CDRSB)
+
+# These variables are predefined so as to be nicely explained
+# time points, these could be 6 month intervals
+time = 0:6
+
+# correlation terms in correlation matrix
+rho = .5
+sigma = .8
+mm = rho^time
+mm = c(mm[order(mm)], mm[2:length(mm)])
+G = vapply(time, FUN = function(x) mm[(length(time)-x):(2*length(time)-x-1)], 
+           FUN.VALUE = rep(1, length(time)))
+# G = G*sigma^2
+# G[,1] = 0*G[,1]
+# G[1,] = 0*G[1,]
+# G
+
+# patient characteristics
+vars = list(W1 = list(dist = rbinom, params = list(size = 1, prob = .5)),
+            W2 = list(dist = rbinom, params = list(size = 1, prob = .5)),
+            W3 = list(dist = rmultinom, params = list(size = 1, prob = c(.56, .4, 0.04))),
+            W4 = list(dist = rbinom, params = list(size = 1, prob = .5)),
+            W5 = list(dist = rbinom, params = list(size = 1, prob = .5)),
+            W6 = list(dist = rbinom, params = list(size = 1, prob = .5)))
+
+# effects based on those characteristics
+bb = rbeta(10000, 2,1)
+hist(bb)
+mean(bb)
+
+effects = list(f1 = function(W) {
+  L = length(W[[1]])
+  re = rnorm(mean = .06, sd = .06, n = L)
+  e = unlist(lapply(1:L, FUN = function(x) W$W1[x]*time*re[x]))
+  return(e)
+},
+f2 = function(W) {
+  L = length(W[[1]])
+  re = rnorm(mean = -.06, sd = .06, n = L)
+  e = unlist(lapply(1:L, FUN = function(x) W$W2[x]*time*re[x]))
+  return(e)
+},
+f3 = function(W) {
+  L = length(W[[1]])
+  re = rmvnorm(mean = c(-.01,.03,.07), 
+               sigma = matrix(c(.05^2,0,0 ,0,.04^2,0,0,0, .07^2),nrow = 3), n = L)
+  e = unlist(lapply(1:L, FUN = function(x) sum(W$W3[,x]*re[x,])*time))
+  return(e)
+},
+f4 = function(W) {
+  L = length(W[[1]])
+  re = rbeta(shape1 = 2, shape2 = 1, n = L) - 2/3
+  e = unlist(lapply(1:L, FUN = function(x) W$W4[x]*time*re[x]))
+  return(e)
+},
+f5 = function(W) {
+  L = length(W[[1]])
+  re = rbinom(n = L,1,.5)
+  re[re==0] = -1
+  e = unlist(lapply(1:L, FUN = function(x) W$W5[x]*time*re[x]*.1))
+  return(e)
+},
+f1 = function(W) {
+  L = length(W[[1]])
+  re = rnorm(mean = -.06, sd = .5, n = L)
+  e = unlist(lapply(1:L, FUN = function(x) W$W6[x]*time*re[x]))
+}
+)
+
+# Main effects on intercept, control rate and rate reduction under treatment
+other = sum(c(.56, .4, 0.04)*c(-.01,.03,.07))
+other
+hist(rbeta(10000, 3,3))
+hist(rbeta(10000, 3,5))
+
+mean(rbeta(1000, 3,3))
+mean(rbeta(100000, 3,5))
+8/3*.05
+
+main_effects = list(Y_0 = list(dist = runif, params = list(min = 1, max = 5)),
+                    rate = list(dist = beta_s, params = list(shape1 = 2, 
+                                                             shape2 = 2, fac = 2/5)),
+                    rate_A = list(dist = beta_s, params = list(shape1 = 3, 
+                                                               shape2 = 5, fac = 8/3*.025)))
+
+beta_s = function(shape1, shape2, n, fac) {
+  rbeta(n, shape1, shape2)*fac
+}
+
+ # generate the data according to above
+undebug(sim_CDR)
+n=100000
+tt = sample(1:1e6,1)
+set.seed(tt)
+@
+
+Here is an example of one draw used in the simulation. First we check the true values by generating a large sample (population) of 1 million participants and get the true parameter values.
+<<echo = echo, eval = FALSE>>==
+# get truth
+undebug(sim_CDR)
+pop = sim_CDR(n=1e5, time, G, W_ind = c(1,2,3,4), effect_ind = c(1,2,3,4), 
+              vars, effects, main_effects)
+head(pop)
+time
+Y0 = unlist(lapply(time, FUN = function(x) mean(pop[pop$A == 0 & pop$t==x, "Y_t"])))
+Y1 = unlist(lapply(time, FUN = function(x) mean(pop[pop$A == 1 & pop$t==x, "Y_t"])))
+plot(time, Y0)
+plot(time, Y1)
+((Y0[7] - Y0[1])/6)
+((Y0[7] - Y0[1])/6 - (Y1[7] - Y1[1])/6)/((Y0[7] - Y0[1])/6)
+
+@
+
+Then we illustrate drawing a sample from this population and performing the simulation estimators
+<<echo = echo, eval = FALSE>>==
+n=1600
+df_alz = sim_CDR(n, time, G, W_ind = c(1,2,3,4), effect_ind = c(1,2,3,4), 
+                 vars, effects, main_effects)
+# head(df_alz, 20)
+# nrow(df_alz)
+# run a random effects model, ignoring patient characteristics under RCT
+# test_alz <- lmer(Y_t ~ A:t +  t + (t | ID) + W1:t + W2:t + V3:t + V4:t+W4:t, df_alz)
+test_alz <- lmer(Y_t ~ A:t +  t + (t | ID), df_alz)
+test_alz1 <- geeglm(Y_t ~ A:t + t, data = df_alz, id = ID)
+ss = summary(test_alz)
+ss1 = summary(test_alz1)
+ss1$coefficients
+ss$coefficients
+@
+We can visualize what this sample looks like by looking at the predicted slopes of the CDR-SB progression.
+
+<<echo = echo, eval = FALSE>>==
+# 
+preds = predict(test_alz)
+plot(preds[df_alz$ID==1], 0:(length(preds[df_alz$ID==1])-1))
+
+range = 1:20
+plotdf = data.frame(y = preds[df_alz$ID %in% range],
+                    x = df_alz$t[df_alz$ID %in% range],
+                    ID = df_alz$ID[df_alz$ID %in% range])
+
+library(ggplot2)
+plotdf$ID = as.factor(plotdf$ID)
+ggover = ggplot(plotdf, aes(x = x, y = y, color = ID))+geom_line()
+ggover
+@
+
+We can also look at the true outcomes plotted for 20 participants in the sample.
+<<echo = echo, eval = FALSE>>==
+plotdf = data.frame(y = df_alz$Y_t[df_alz$ID %in% range],
+                    x = df_alz$t[df_alz$ID %in% range],
+                    ID = df_alz$ID[df_alz$ID %in% range])
+
+plotdf$ID = as.factor(plotdf$ID)
+ggover = ggplot(plotdf, aes(x = x, y = y, color = ID))+geom_line()
+ggover
+
+df_alz0 = df_alz
+df_alz$A = 0
+preds0 = predict(test_alz, newdata = controls)
+slopes0 = lapply(1:n, FUN = function(x) {
+ pp = preds0[controls$ID==x] 
+ (pp[length(pp)] - pp[1])/(6/(length(pp)-1))
+})
+
+preds = predict(test_alz)
+slopes = lapply(1:n, FUN = function(x) {
+ pp = preds[df_alz$ID==x] 
+ (pp[length(pp)] - pp[1])/(6/(length(pp)-1))
+})
+hist(unlist(slopes))
+mean(unlist(slopes0))
+mean(unlist(slopes))
+@
+
+Here is the script used to run the simulation, performed on a high performance cluster:
+<<echo = echo, eval = FALSE>>==
+
+# big = which(unlist(slopes)>7)
+# big[1]
+
+test = unlist(lapply(1:100, FUN = function(x) {
+  df_alz = sim_CDR(n, time, G, vars, effects, main_effects)
+  test_alz <- lmer(Y_t ~ A:t +  t + (t | ID), df_alz)
+  ss = summary(test_alz)
+  return(abs(ss$coefficients[3,3])>=1.96)
+}))
+
+mean(test)
+
+@
+\end{document}
