@@ -77,7 +77,8 @@ f6 = function(W) {
 }
 )
 
-
+n=1600
+library(parallel)
 test = mclapply(1:5000, FUN = function(x) {
   df_alz = sim_CDR(n, time, G, W_ind = c(1,2,3,4,5,6), effect_ind = c(1,2,3,4,5,6), 
                    vars, effects, main_effects)
