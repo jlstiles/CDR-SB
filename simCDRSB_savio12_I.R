@@ -80,7 +80,7 @@ library(parallel)
 library(plyr)
 test = mclapply(1:5000, FUN = function(x) {
   df_alz = sim_CDR(n, time, G, W_ind = c(1,2,3,4,5,6), effect_ind = c(1,2,3,4,5,6), 
-                   vars, effects, main_effects)
+                   vars, effects, random_effects)
   cutout = sample(1:1600, 400)
   temp = lapply(1:1600, FUN = function(x) ifelse(x %in% cutout, 1, 0))
   temp = unlist(lapply(temp, FUN = function(x) rep(x, length(time))))
