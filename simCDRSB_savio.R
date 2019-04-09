@@ -78,7 +78,7 @@ f6 = function(W) {
 )
 
 
-test = lapply(1:5000, FUN = function(x) {
+test = mclapply(1:5000, FUN = function(x) {
   df_alz = sim_CDR(n, time, G, W_ind = c(1,2,3,4,5,6), effect_ind = c(1,2,3,4,5,6), 
                    vars, effects, main_effects)
   df_alz1 = ddply(df_alz, "ID", .fun = function(x) {
