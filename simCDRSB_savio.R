@@ -1,7 +1,5 @@
 library(CDRSB)
 
-library(CDRSB)
-
 # These variables are predefined so as to be nicely explained
 # time points, these could be 6 month intervals
 time = 0:6
@@ -81,7 +79,7 @@ n=1600
 library(parallel)
 test = mclapply(1:5000, FUN = function(x) {
   df_alz = sim_CDR(n, time, G, W_ind = c(1,2,3,4,5,6), effect_ind = c(1,2,3,4,5,6), 
-                   vars, effects, main_effects)
+                   vars, effects, random_effects)
   df_alz1 = ddply(df_alz, "ID", .fun = function(x) {
     probs = pmin(1,exp(-3 + .189*x$Y_t)[1:(length(time)-1)])
     cens = rbinom((length(time)-1), 1, probs)

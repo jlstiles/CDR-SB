@@ -1,7 +1,5 @@
 library(CDRSB)
 
-library(CDRSB)
-
 # These variables are predefined so as to be nicely explained
 # time points, these could be 6 month intervals
 time = 0:6
