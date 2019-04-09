@@ -95,7 +95,7 @@ test = mclapply(1:5000, FUN = function(x) {
   })
   test_alz <- lmer(Y_t ~ A:t +  t + (t | ID), df_alz1)
   ss = summary(test_alz)
-  return(list(ss = ss, cover = abs(ss$coefficients[3,3])>=1.96))
+  return(list(ss = ss$coefficients, cover = abs(ss$coefficients[3,3])>=1.96))
 }, mc.cores = getOption("mc.cores", 24L))
 
 save(test, file = "test12_interim.RData")
