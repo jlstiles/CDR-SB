@@ -83,11 +83,12 @@ test = mclapply(1:5000, FUN = function(x) {
   df_alz1 = ddply(df_alz, "ID", .fun = function(x) {
     probs = pmin(1,exp(-3 + .189*x$Y_t)[1:(length(time)-1)])
     cens = rbinom((length(time)-1), 1, probs)
-    probs
     if (any(cens==1)) {
       C = min(which(cens==1))+1
-      return(x[1:C,])
-    } else return(x)
+      if (C >=5) {
+        if (x$temp[1]==1) return(x[1:4, ]) else return(x[1:C,])
+      } else return(x[1:C,])
+    } else if (x$temp[1]==1) return(x[1:4, ]) else return(x)
   })
   test_alz <- lmer(Y_t ~ A:t +  t + (t | ID), df_alz1)
   ss = summary(test_alz)

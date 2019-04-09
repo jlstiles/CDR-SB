@@ -90,7 +90,9 @@ test = mclapply(1:5000, FUN = function(x) {
     cens = rbinom((length(time)-1), 1, probs)
     if (any(cens==1)) {
       C = min(which(cens==1))+1
-      if (C >=5) if (x$temp[1]==1) return(x[1:4, ]) else return(x[1:C,])
+      if (C >=5) {
+        if (x$temp[1]==1) return(x[1:4, ]) else return(x[1:C,])
+      } else return(x[1:C,])
     } else if (x$temp[1]==1) return(x[1:4, ]) else return(x)
   })
   test_alz <- lmer(Y_t ~ A:t +  t + (t | ID), df_alz1)
