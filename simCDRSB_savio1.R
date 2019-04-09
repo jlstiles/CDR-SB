@@ -79,6 +79,10 @@ library(plyr)
 test = mclapply(1:5000, FUN = function(x) {
   df_alz = sim_CDR(n, time, G, W_ind = c(1,2,3,4,5,6), effect_ind = c(1,2,3,4,5,6), 
                    vars, effects, random_effects)
+  cutout = sample(1:1600, 400)
+  temp = lapply(1:1600, FUN = function(x) ifelse(x %in% cutout, 1, 0))
+  temp = unlist(lapply(temp, FUN = function(x) rep(x, length(time))))
+  df_alz$temp = temp
   df_alz1 = ddply(df_alz, "ID", .fun = function(x) {
     probs = pmin(1,exp(-3 + .189*x$Y_t)[1:(length(time)-1)])
     cens = rbinom((length(time)-1), 1, probs)
@@ -96,4 +100,4 @@ test = mclapply(1:5000, FUN = function(x) {
 
 save(test, file = "test1.RData")
 
-devtools::install_github("jlstiles/CDR-SB")
+
