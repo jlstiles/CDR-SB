@@ -19,7 +19,7 @@
 \newtheorem{lem}[thm]{Lemma}
 \newtheorem{prop}[thm]{Proposition}
 \newtheorem*{cor}{Corollary}
-
+\renewcommand{\baselinestretch}{1.37} 
 \theoremstyle{definition}
 \newtheorem{defn}{Definition}[section]
 \newtheorem{conj}{Conjecture}[section]
@@ -52,7 +52,7 @@
 \usepackage{amssymb}
 \usepackage{amsfonts}
 
-\usepackage[style=authoryear,maxcitenames=2, doi=false]{biblatex}
+\usepackage[style=authoryear,maxcitenames=4, doi=false]{biblatex}
 
 \bibliography{references}
 \newcommand{\noopsort}[2]{#2}
@@ -62,7 +62,7 @@ bmargin = 1.35in, tmargin = 1.35in]{geometry}
 \usepackage[english]{babel}
 \usepackage{graphicx}
 \usepackage{float}
-
+\usepackage{csquotes}
 \usepackage{caption}
 \def\changemargin#1#2{\list{}{\rightmargin#2\leftmargin#1}\item[]}
 \let\endchangemargin=\endlist
@@ -78,22 +78,189 @@ bmargin = 1.35in, tmargin = 1.35in]{geometry}
 \maketitle
 \end{titlepage}
 \section{Introduction}
-We aim to simulate alzheimer's data for Alzheimer's Disease patients with a baseline Mini Mental State Exam score of between 24 and 30, which translates to patients with a CDR-SB score of approximately between 0 and 4 (citation).  There are potentially many factors affecting the rate of increase in the CDR-SB score as well as potentially interactions of treatment with patient characteristics.  It suffices to say, the functional dependence of CDR-SB rate on patient characteristics and treatmet is not known, though we have literature available to us that shows the magnitude of various risk factors. We will call upon the literature to provide a framework for some known patient characteristics affecting CDR-SB progression, including APOE4 heterozygous or homozygous gene, which is strongly theorized to affect chances of developing alzheimer's disease and alzheimer's progression.  Gender has also been shown to have an association, though the direction is not consistent in the literature.  Here we assume gender adds a deleterious effect for females, as referenced by (citation). 
+We aim to simulate data for Alzheimer's Disease patients with a baseline Mini Mental State Exam score of between 24 and 30, which translates to patients with a CDR-SB score of approximately between 0 and 4 \parencite{mmsetocdrsb}.  The patients will be followed for 6 quarterly time periods.  The exact functional dependence of CDR-SB rate of increase per year on various patient characteristics and treatmet is not known, though we have literature available to us that estimates the magnitude of various risk factors on CDR-SB rate in terms of inear model fits.  Having an estimate of coefficients of risk factors and treatment interacting with time in a linear model does not provide an accurate measure of how such coefficients (considered random effects) vary from person to person. For such, it would be beneficial to have actual data and even with data, we do not know the variation of treatment effect on the CDR-SB rate from person to person.\\  
 
-\section{Alzheimer's Data}
-We consulted 
+We will thus form two models, one with half the variance in the individual risk factors affecting CDR-SB rate.  For each of these two basic models, we will include a censoring mechanism that is informed by CDR-SB, according to the literature.  We will also run each simulation where 25\% of the study does not have any information past 1 year (4 quarterly time periods) as an interim analysis might occur during a randomized clinical trial.  The goal in our simulations is to capture natural variation of outcomes one might see in the population. The following is our general procedure, which is repeated 5000 times for each type of simulation.  
 
-We aim to simulate a clinical trial
-1. Review the main literature on CDR-SB and extract info about the rates of change and associated variations
-2. Write SAS programs to simulate clinical trials with the projected effect size by the sponsor, and then run statistical tests using the MMRM and report the proportion of positive trials
-3. Repeat Step 2 for 50\% of the projected effect size by the sponsor
-4. Summarize the simulation methods and final results from last 3 steps
+\begin{enumerate}
+\item
+Generate the data randomly (monte carlo draws from known distributions) with the true treatment effect incorporated into the population model, along with various other known factors from the literature.   
+\item
+Perform an estimator aimed at asceratining marginal effects of the treatment. In our case, we will perform a generalized estimating equation (GEE) estimator and a mixed effects repeated measures (MMRM) estimator with some additional main terms interacting with time as well as a basic model.  
+\item
+If the estimate of the decrease in CDR-SB growth rate from treatment is significant (at signficance level 0.05) then we will have shown a significant marginal effect of treatment and we will not have committed type II error.    
+\end{enumerate}
+
+Then we compute the percentage of type II errors made for our power computation. The rest of the this report details the steps above and then gives the results of the simulations.   
+\
+\section{Factors in Alzheimer's progression}
+
+
+\begin{itemize}
+\item 
+Ostrowitzki et al., 2017 \nocite{gantenerumab}.
+
+This study detailed a phase III clinical trial with a study population very much similar to our interests in terms of the 797 participants having a mean MMSE score of 25.7 and a mean baseline CDR-SB score of 2.1.  The paper also provided a percentage breakdown for APOE4 genotypes, 29.7\% had not the allele, 50.4\% had heterozygous allele and 19.9\% had the homozygous allele. The APOE gene provides instructions for making a protein called apolipoprotein E which combines with lipids in the body to form molecules called lipoproteins. The plaque build-up in the brain of alzheimer's patients is thought to be related to the APOE4 allele.  The average CDR-SB growth rate per year was roughly 1.60, which was very similar for placebo and control in this trial, and the mean age of the population was 69.5. 
+<<eval = TRUE, echo = FALSE>>==
+echo = FALSE
+@
+
+<<echo = FALSE, eval = FALSE>>==
+
+
+table1 = read.csv("table1_gantenerumab.csv")
+table1
+table2 = read.csv("table2_gantenerumab.csv")
+rownames(table2)[5] = "CDR-SB"
+table2
+
+
+table1 = read.csv("study_1100.csv")
+head(table1)
+@
+\item
+Haaksma et al., 2018 \nocite{study1100}:
+
+Gender: females have a faster rate, as also referenced by Lin et al., 2015. \nocite{menwomen, study1100}.  This study had a sample size of 1120 of alzheimer's patients from 31 different locations.  They were able to distinguish three different classes of patients in terms of progression rate but here we are mainly concerned with modeling the control arm.  mean cdr-sb decline about 1.2 to 1.4 over 3 years and the baseline CDR-SB was 3.8, baseline MMSE 24.2 with an average age of 79.4.  The study also found an association between those with previous hypertension as a protective and those with higher education as a risk factor.  The reason for the higher education being a risk factor could be due to the fact more educated people score better on the tests and are therefore diagnosed later in the disease progression.  We can see in the figure below, that some of the rates of CDR-SB decrease were quite rapid, a very broad range. In the figure below, CDR-SB was inverted so that decrease means getting worse.  The CDR-SB control arm progression rate is not a linear function of time as evidenced by figure below.  
+
+\begin{figure}[H]
+  \centering
+  \caption{CDR-SB rates from Haaksma et al., 2017}
+  \includegraphics[scale=.1]{rates.png}
+    % picture filename
+\end{figure}
+\item
+Vissia Viglietta et al., 2016 \nocite{aducan}.
+
+This study was a phase 1b interim analysis for aducanumab.  There were only 40 observed in the placebo group for a year.  Their baseline CDR-SB and MMSE were 2.66 and 24.7, respectively and the CDR-SB rate was about 1.6 per year. 
+\item
+Swanson et al., 2018 \nocite{ban2401}.
+
+This is a report from a collaboration of Eisai and Biogen to develop the drug, BAN2401.  They had 245 placebo (43 cens) 609 (137 cens) treated.  The mean MMSE bl 25.6 $\pm 2.4$  and CDR-SB bl 2.95 $\pm1.37$.  Mean age was 71.4 and 71.1 (treated) with a range of 50-90 and 50-89 (treated).  In this population, 71.2\% had the allele APOE4.  
+The placebo CDR-SB increase was 1.5 in 18 months.  
+
+\item
+Haeberlein et al., 2017:
+
+This was review of the clinical development of aducanumab. They had 48 placebo participants with an MMSE average at baseline of 24.7 $\pm 3.6$, CDR-SB bl 2.69 $\pm1.54$,  APOE4+ 34/48\%, Mean Age = 73.8 $\pm 6.8$.  The placebo group declined 2 in 54 weeks, which was on the high end of estimates.  
+
+\item
+Hallikainen et al., 2014, "The Progression of Alzheimer’s Disease Can Be Assessed with a Short Version of the
+CERAD Neuropsychological Battery: The Kuopio ALSOVA Study" \nocite{alzCERAD}
+
+Many baseline factors can predict the risk of rapid AD progression, including young age, male gender (though female has been associated with more rapid decline), deteriorated cognition, behavioral symptoms, poor awareness of impairment, impaired activities of daily living, and delirium \parencite{alzCERAD}. The final ALSOVA study group was comprised of 236 persons with very mild (CDR = 0.5, n = 128) or mild AD (CDR = 1.0, n = 108) at baseline.  
+
+\item
+Lina et al., 2015 \nocite{menwomen}:
+
+This study included 257 men, 141 women and showed a pronounced deleterious association with women and worsening CDR-SB scores.  
+<<echo =echo, eval = FALSE>>==
+
+table1 = read.csv("menvwomen.csv")
+table2 = read.csv("menvwomen1.csv")
+
+table1
+table2
+@
+
+\item
+Honig et al, 2018 \nocite{Markarticle}
+
+This article detailed the clinical trial of Solanezumab, with a total of 2129 patients, 1057 were assigned to receive solanezumab and 1072 to receive placebo. 10\% dropout about equal in placebo or control. These patients were a bit more advanced averaging around 2 decrease in CDR-SB for 80weeks and their average baseline CDR-SB was about 3.9 with a mean MMSE score of 22.62. The trial showed no effect of treatment.   
+
+<<echo =FALSE, eval = FALSE>>==
+
+table1 = read.csv("markarticle_table1.csv")
+table2 = read.csv("markarticle_table2.csv")
+
+table1
+table2
+@
+
+\item
+Balsis et al., 2015 \nocite{mmsetocdrsb}.
+
+This article provides a chart for equating common cognitive scores used to assess alzheimer's progression.  See the table below, pulled from the paper. 
+
+\begin{table}[!htbp] \centering 
+  \caption{relating scores \parencite{mmsetocdrsb}} 
+  \label{} 
+\begin{tabular}{@{\extracolsep{5pt}} cccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & ADAS-COG & MMSE & CDR-SB \\ 
+\hline \\[-1.8ex] 
+1 & $1$ & $30$ & $0$ \\ 
+2 & $2$ & $30$ & $0$ \\ 
+3 & $3$ & $30$ & $0$ \\ 
+4 & $4$ & $30$ & $0$ \\ 
+5 & $5$ & $30$ & $0$ \\ 
+6 & $6$ & $29$ & $0$ \\ 
+7 & $7$ & $29$ & $0.500$ \\ 
+8 & $8$ & $29$ & $0.500$ \\ 
+9 & $9$ & $28$ & $1$ \\ 
+10 & $10$ & $28$ & $1$ \\ 
+11 & $11$ & $27$ & $1.500$ \\ 
+12 & $12$ & $27$ & $1.500$ \\ 
+13 & $13$ & $26$ & $2$ \\ 
+14 & $14$ & $26$ & $2.500$ \\ 
+15 & $15$ & $26$ & $2.500$ \\ 
+16 & $16$ & $25$ & $3$ \\ 
+17 & $17$ & $25$ & $3$ \\ 
+18 & $18$ & $24$ & $3.500$ \\ 
+19 & $19$ & $24$ & $4$ \\ 
+20 & $20$ & $24$ & $4$ \\ 
+21 & $21$ & $23$ & $4.500$ \\ 
+22 & $22$ & $23$ & $4.500$ \\ 
+23 & $23$ & $23$ & $4.500$ \\ 
+24 & $24$ & $22$ & $5$ \\ 
+25 & $25$ & $22$ & $5$ \\ 
+26 & $26$ & $22$ & $5.500$ \\ 
+27 & $27$ & $22$ & $5.500$ \\ 
+28 & $28$ & $21$ & $5.500$ \\ 
+29 & $29$ & $21$ & $6$ \\ 
+30 & $30$ & $21$ & $6$ \\ 
+31 & $31$ & $21$ & $6$ \\ 
+32 & $32$ & $21$ & $6.500$ \\ 
+33 & $33$ & $21$ & $6.500$ \\ 
+34 & $34$ & $20$ & $6.500$ \\ 
+35 & $35$ & $20$ & $6.500$ \\ 
+36 & $36$ & $20$ & $6.500$ \\ 
+37 & $37$ & $20$ & $6.500$ \\ 
+\hline \\[-1.8ex] 
+\end{tabular} 
+\end{table} 
+<<echo =echo, eval = FALSE>>==
+library(stargazer)
+table1 = read.csv("MMSEtoCDRSB.csv")
+colnames(table1) = c("ADAS-COG", "MMSE", "CDR-SB")
+stargazer(table1, summary = FALSE)
+@
+\item 
+Samtani et al., 2014 \nocite{mostcomplete}
+
+This study used alzheimer’s Disease Neuroimaging initiative (ADNI) data for 301 subjects total, 2 years follow up for 199 mildly cognitive impaired (MCI) and 3 years follow-up for 102 AD patients.  They used very highly tuned mixed effects modeling and estimated a .5 to 1.4 yearly increase in CDR-SB for mild AD, MCI.  They also estimated the hazard of dropout increases by 21\% for each point in CDR-SB.  
+<<echo=echo, eval = FALSE>>==
+table1 = read.csv("MostComplete_Cens.csv")
+stargazer(table1)
+
+table2 = read.csv("mostcomplete.csv")
+stargazer(table2, summary = FALSE)
+?read.csv
+@
+\end{itemize}
 
 We will start with a basic model: start with model $Y_{i,t} = \beta_{0,i} + \alpha_{i,t} t + \epsilon_{i,t}$.  One could start by making the rate dependent on the baseline CDR-SB score. 
 
 The following code chunk shows the parameters of the data generating systems used for the simulations.  We envision a trial lasting 18 months with quarterly measurements of the participants.   
 <<echo = FALSE, eval = TRUE>>==
 echo = TRUE
+
+# rate approx
+(1120*1.3 + 797*1.6 + 40*1.6+245*1.5+ 2*54/56*48 + 1072*2+.95*302)/(1120+797+40+245+48+1072+302)
+
+(1120*1.3 + 797*1.6 + 40*1.6+245*1.5+ 2*54/56*48 +.95*302)/(1120+797+40+245+48+302)
+
 @
 
 <<echo = echo, eval = FALSE>>==
@@ -103,109 +270,152 @@ library(CDRSB)
 # time points, these could be 6 month intervals
 time = 0:6
 
-# correlation terms in correlation matrix
+# correlation terms in correlation matrix, auto-regressive
 rho = .5
 sigma = .8
+rho = .5
 mm = rho^time
 mm = c(mm[order(mm)], mm[2:length(mm)])
 G = vapply(time, FUN = function(x) mm[(length(time)-x):(2*length(time)-x-1)], 
            FUN.VALUE = rep(1, length(time)))
-# G = G*sigma^2
+G = G*sigma^2
 # G[,1] = 0*G[,1]
 # G[1,] = 0*G[1,]
 # G
 
 # patient characteristics
+
 vars = list(W1 = list(dist = rbinom, params = list(size = 1, prob = .5)),
             W2 = list(dist = rbinom, params = list(size = 1, prob = .5)),
-            W3 = list(dist = rmultinom, params = list(size = 1, prob = c(.56, .4, 0.04))),
-            W4 = list(dist = rbinom, params = list(size = 1, prob = .5)),
-            W5 = list(dist = rbinom, params = list(size = 1, prob = .5)),
-            W6 = list(dist = rbinom, params = list(size = 1, prob = .5)))
+            W3 = list(dist = rmultinom, params = list(size = 1, prob = c(.4, .4, 0.2))),
+            W4 = list(dist = rnorm, params = list(mean = 15, sd = 4)),
+            W5 = list(dist = rnorm, params = list(mean = 70, sd = 7.5)),
+            W6 = list(dist = rnorm, params = list(mean = 3000, sd = 370)),
+            W7 = list(dist = rbinom, params = list(size = 1, prob = .5))
+            )
+
+
+
+sd(rbeta(10000, 2,2)*2/5)
+
+beta_s = function(n, shape1, shape2, fac, addon) {
+  (rbeta(n, shape1, shape2)*fac+addon)
+}
+
+random_effects = list(Y_0 = list(dist = runif, params = list(min = 1, max = 4)),
+                    rate = list(dist = beta_s, params = list(shape1 = 2, 
+                                                             shape2 = 3, fac = 1/1.2,addon = 0)),
+                    # rate_A = list(dist = rnorm, params = list(mean = .05,
+                    #                                            sd = .161))
+                    rate_A = list(dist = beta_s, params = list(shape1 = 3,
+                                                               shape2 = 5, fac = -.5, addon = .122 ))
+                    )
+
+
+tester = beta_s(1e5, 2,3,1/1.2,addon= 0)
+hist(tester)
+mean(tester)
+mean(tester)*4/1.3
+sd(tester)
+
+rate_test = beta_s(1e6, 3,5,-.5,.125)
+hist(rate_test)
+mean(rate_test)
+sd(rate_test)
+
+.06*(.056)
+8/3*.056
+sd(rbeta(n=1e6, shape1=3, shape2=5)*.5)
+addon = -.3335/4*3/5 + mean(rbeta(shape1=3, shape2=5,n=1e6)*.5)
+addon
+sd(rbeta(shape1=2, shape2=2,n=1e5)*2/5)
 
 # effects based on those characteristics
 bb = rbeta(10000, 2,1)
 hist(bb)
 mean(bb)
 
+#effects include APOE4+, gender, age, MMSE bl score, hyoertension (helps!), higher ed (hurts!),
 effects = list(f1 = function(W) {
   L = length(W[[1]])
-  re = rnorm(mean = .06, sd = .06, n = L)
+  re = rnorm(mean = .06, sd = .2, n = L)
   e = unlist(lapply(1:L, FUN = function(x) W$W1[x]*time*re[x]))
   return(e)
 },
 f2 = function(W) {
   L = length(W[[1]])
-  re = rnorm(mean = -.06, sd = .06, n = L)
+  re = rnorm(mean = -.06, sd = .2, n = L)
   e = unlist(lapply(1:L, FUN = function(x) W$W2[x]*time*re[x]))
   return(e)
 },
 f3 = function(W) {
   L = length(W[[1]])
   re = rmvnorm(mean = c(-.01,.03,.07), 
-               sigma = matrix(c(.05^2,0,0 ,0,.04^2,0,0,0, .07^2),nrow = 3), n = L)
+               sigma = matrix(c(.05^2,0,0 ,0,.04^2,0,0,0, .1^2),nrow = 3), n = L)
   e = unlist(lapply(1:L, FUN = function(x) sum(W$W3[,x]*re[x,])*time))
   return(e)
 },
 f4 = function(W) {
   L = length(W[[1]])
-  re = rbeta(shape1 = 2, shape2 = 1, n = L) - 2/3
-  e = unlist(lapply(1:L, FUN = function(x) W$W4[x]*time*re[x]))
+  re = rbeta(shape1 = 2, shape2 = 1, n = L) - 2/3 + .03
+  e = unlist(lapply(1:L, FUN = function(x) (W$W4[x]-15)/4*time*re[x]))
   return(e)
 },
 f5 = function(W) {
   L = length(W[[1]])
-  re = rbinom(n = L,1,.5)
-  re[re==0] = -1
-  e = unlist(lapply(1:L, FUN = function(x) W$W5[x]*time*re[x]*.1))
+  re = rbeta(shape1 = 2, shape2 = 1, n = L) - 2/3 + .01
+  e = unlist(lapply(1:L, FUN = function(x) (W$W5[x]-70)/7.5*time*re[x]*.1))
   return(e)
 },
-f1 = function(W) {
+f6 = function(W) {
   L = length(W[[1]])
-  re = rnorm(mean = -.06, sd = .5, n = L)
-  e = unlist(lapply(1:L, FUN = function(x) W$W6[x]*time*re[x]))
+  re = rbeta(shape1 = 2, shape2 = 1, n = L) - 2/3 - .04
+  e = unlist(lapply(1:L, FUN = function(x) (W$W6[x]-3000)/370*time*re[x]))
+},
+f7 = function(W) {
+  L = length(W[[1]])
+  re = rnorm(mean = .06, sd = .025, n = L)
+  e = unlist(lapply(1:L, FUN = function(x) W$W7[x]*time*re[x]))
 }
 )
 
 # Main effects on intercept, control rate and rate reduction under treatment
-other = sum(c(.56, .4, 0.04)*c(-.01,.03,.07))
+other = sum(c(.4, .4, 0.2)*c(-.01,.03,.07))
 other
-hist(rbeta(10000, 3,3))
-hist(rbeta(10000, 3,5))
+# hist(rbeta(10000, 5,2))
+# hist(rbeta(10000, 3,5))
+# hist(rbeta(10000, 1,.01))
 
-mean(rbeta(1000, 3,3))
-mean(rbeta(100000, 3,5))
-8/3*.05
 
-main_effects = list(Y_0 = list(dist = runif, params = list(min = 1, max = 5)),
-                    rate = list(dist = beta_s, params = list(shape1 = 2, 
-                                                             shape2 = 2, fac = 2/5)),
-                    rate_A = list(dist = beta_s, params = list(shape1 = 3, 
-                                                               shape2 = 5, fac = 8/3*.025)))
-
-beta_s = function(shape1, shape2, n, fac) {
-  rbeta(n, shape1, shape2)*fac
-}
 
  # generate the data according to above
-undebug(sim_CDR)
-n=100000
-tt = sample(1:1e6,1)
-set.seed(tt)
 @
 
+
+
+\section{The estimation procedure}
+We aim to estimate the marginal effects of treatment as an average rate of change in CDR-SB per year for the population under treatment.  Before we explain the methodology we define the following notation:
+$Y_1(t)$ is the counterfactual outcome (\parencite{neyman1923}) of a random individual in the population under treatment at time, $t$, and $Y_0(t)$ is the counterfactual outcome of a random individual in the population under placebo at time, $t$.  For the population in reality, we wish to know the function of time, $t$: $f_1(t) = \mathbb{E} Y_1(t)$ and $f_0(t) = \mathbb{E} Y_0(t)$ and then make a comparison. However, we do not know the functional form of $f_0$ or $f_1$.  Thus, our estimate for the $\beta_a$ will be the slope of the line estimating $f_1$ minus the slope of line estimating $f_0$.  Below we illustrate the parameter we are estimating for the population.\\
+
+To estimate the parameter described above, it is common to use either the generalized estimating equations (GEE) approach or a mixed effects repeated measures (MMRM) approach. Here we will focus on MMRM.  The true functions may be close to linear but there is no chance they are identically linear. If censoring is informed by the past as well as time varying variables, such as the outcome, for instance, then MMRM will give biased estimates due to confounding by censoring. If, for instance, patients who benefit in CDR-SB from treatment quit due to minor side effects, the censoring will bias toward the null hypothesis of no treatment effect.  If treatment causes some negative effects on CDR-SB and thus causes doctors to censor the patient, then bias will go away from the null hypothesis. The case to be very wary of for this kind of trial would be censoring due to higher CDR-SB.  If the treatment is working well and those with high CDR-SB in the placebo group are censored, then not accounting for the mechanism behind the censoring will attentuate the good effects of the treatment.  The GEE approach will have similar problems unless we use inverse weighting by probability of censoring \parencite{Robins:2000aa}. However, this approach is most likely lacking in efficiency (cite petersen). \\ 
+
+
+Therefore, it is recommended, though beyond the scope of this report, that the statistics are performed in a way that estimates the parameter of interest in an unbiased way via the use of a marginal structural model estimated using targeted maximum likelihood estimation \parencite{Laan:2006aa, Laan:2011aa}.\\ 
+
+
+Though in reality, the true functional form of 
 Here is an example of one draw used in the simulation. First we check the true values by generating a large sample (population) of 1 million participants and get the true parameter values.
 <<echo = echo, eval = FALSE>>==
 # get truth
-undebug(sim_CDR)
-pop = sim_CDR(n=1e5, time, G, W_ind = c(1,2,3,4), effect_ind = c(1,2,3,4), 
-              vars, effects, main_effects)
+pop = sim_CDR(n=1e5, time, G, W_ind = c(1,2,3,4,5,6), effect_ind = c(1,2,3,4,5,6), 
+              vars, effects, random_effects)
 head(pop)
 time
 Y0 = unlist(lapply(time, FUN = function(x) mean(pop[pop$A == 0 & pop$t==x, "Y_t"])))
 Y1 = unlist(lapply(time, FUN = function(x) mean(pop[pop$A == 1 & pop$t==x, "Y_t"])))
 plot(time, Y0)
 plot(time, Y1)
+
 ((Y0[7] - Y0[1])/6)
 ((Y0[7] - Y0[1])/6 - (Y1[7] - Y1[1])/6)/((Y0[7] - Y0[1])/6)
 
@@ -214,19 +424,43 @@ plot(time, Y1)
 Then we illustrate drawing a sample from this population and performing the simulation estimators
 <<echo = echo, eval = FALSE>>==
 n=1600
-df_alz = sim_CDR(n, time, G, W_ind = c(1,2,3,4), effect_ind = c(1,2,3,4), 
+# undebug(sim_CDR)
+df_alz = sim_CDR(n, time, G, W_ind = c(1,2,3,4,5,6), effect_ind = c(1,2,3,4,5,6), 
                  vars, effects, main_effects)
-# head(df_alz, 20)
+
+
+head(df_alz,6)
+
+# with every 1 increase in CDR-SB, 20% higher chance of censoring so we have cox model: following the table we
+# have prob of censoring is about exp(-3 + .189*CDR-SB)
+
+# library(plyr)
+df_alz1 = ddply(df_alz, "ID", .fun = function(x) {
+  
+  probs = exp(-3 + .189*x$Y_t)[1:(length(time)-1)]
+  cens = rbinom((length(time)-1), 1, probs)
+  if (any(cens==1)) {
+    C = min(which(cens==1))+1
+    return(x[1:C,])
+  } else return(x)
+})
+  
+head(df_alz1, 20)
 # nrow(df_alz)
 # run a random effects model, ignoring patient characteristics under RCT
 # test_alz <- lmer(Y_t ~ A:t +  t + (t | ID) + W1:t + W2:t + V3:t + V4:t+W4:t, df_alz)
-test_alz <- lmer(Y_t ~ A:t +  t + (t | ID), df_alz)
-test_alz1 <- geeglm(Y_t ~ A:t + t, data = df_alz, id = ID)
+# test_alz <- lmer(Y_t ~ A:t +  t +  W1 + W2 + V3 + V4 + (t | ID), df_alz)
+# test_alz <- lmer(Y_t ~ A:t +  t + t:W1 + t:W2 + (t | ID),data= df_alz)
+test_alz <- lmer(Y_t ~ A:t +  t + (t | ID),data= df_alz)
+test_alz1 <- lmer(Y_t ~ A:t +  t + (t | ID),data= df_alz1)
 ss = summary(test_alz)
 ss1 = summary(test_alz1)
-ss1$coefficients
-ss$coefficients
+ss
+ss1
 @
+
+
+
 We can visualize what this sample looks like by looking at the predicted slopes of the CDR-SB progression.
 
 <<echo = echo, eval = FALSE>>==
@@ -234,43 +468,56 @@ We can visualize what this sample looks like by looking at the predicted slopes 
 preds = predict(test_alz)
 plot(preds[df_alz$ID==1], 0:(length(preds[df_alz$ID==1])-1))
 
-range = 1:20
+range = 1:200
 plotdf = data.frame(y = preds[df_alz$ID %in% range],
                     x = df_alz$t[df_alz$ID %in% range],
                     ID = df_alz$ID[df_alz$ID %in% range])
 
+
 library(ggplot2)
 plotdf$ID = as.factor(plotdf$ID)
-ggover = ggplot(plotdf, aes(x = x, y = y, color = ID))+geom_line()
+ggover = ggplot(data = subset(plotdf, ID ==1), aes(x = x, y=y))+geom_line(color = "blue")
 ggover
+for (i in 2:200) {
+  ggover = ggover + geom_line(data = subset(plotdf, ID ==i), aes(x = x, y=y), color = "blue")
+}
+
+ggover = ggplot(plotdf, aes(x = x, y))+geom_line(y=y)
+
 @
 
 We can also look at the true outcomes plotted for 20 participants in the sample.
 <<echo = echo, eval = FALSE>>==
-plotdf = data.frame(y = df_alz$Y_t[df_alz$ID %in% range],
-                    x = df_alz$t[df_alz$ID %in% range],
-                    ID = df_alz$ID[df_alz$ID %in% range])
+range = 100:120
+plotdf = data.frame(y = df_alz$Y_t[df_alz1$ID %in% range],
+                    x = df_alz$t[df_alz1$ID %in% range],
+                    ID = df_alz$ID[df_alz1$ID %in% range])
 
 plotdf$ID = as.factor(plotdf$ID)
 ggover = ggplot(plotdf, aes(x = x, y = y, color = ID))+geom_line()
 ggover
 
-df_alz0 = df_alz
-df_alz$A = 0
-preds0 = predict(test_alz, newdata = controls)
+df_alz_0 = df_alz_1 = df_alz1
+df_alz_0$A = 0
+df_alz_1$A = 1
+preds0 = predict(test_alz1, newdata = df_alz_0)
+preds1 = predict(test_alz1, newdata = df_alz_1)
+
 slopes0 = lapply(1:n, FUN = function(x) {
- pp = preds0[controls$ID==x] 
- (pp[length(pp)] - pp[1])/(6/(length(pp)-1))
+ pp = preds0[df_alz_0$ID==x] 
+ (pp[length(pp)] - pp[1])/(length(pp)-1)*4
 })
 
-preds = predict(test_alz)
-slopes = lapply(1:n, FUN = function(x) {
- pp = preds[df_alz$ID==x] 
- (pp[length(pp)] - pp[1])/(6/(length(pp)-1))
-})
-hist(unlist(slopes))
+slopes1 = lapply(1:n, FUN = function(x) {
+ pp = preds1[df_alz_1$ID==x] 
+ (pp[length(pp)] - pp[1])/(length(pp)-1)*4
+ })
+
+
+hist(unlist(slopes0))
 mean(unlist(slopes0))
-mean(unlist(slopes))
+hist(unlist(slopes1))
+mean(unlist(slopes1))
 @
 
 Here is the script used to run the simulation, performed on a high performance cluster:
@@ -278,15 +525,22 @@ Here is the script used to run the simulation, performed on a high performance c
 
 # big = which(unlist(slopes)>7)
 # big[1]
+library(CDRSB)
 
-test = unlist(lapply(1:100, FUN = function(x) {
-  df_alz = sim_CDR(n, time, G, vars, effects, main_effects)
+test = lapply(1:10, FUN = function(x) {
+  df_alz = sim_CDR(n, time, G, W_ind = c(1,2,3,4,5,6), effect_ind = c(1,2,3,4,5,6), 
+                 vars, effects, main_effects)
   test_alz <- lmer(Y_t ~ A:t +  t + (t | ID), df_alz)
   ss = summary(test_alz)
-  return(abs(ss$coefficients[3,3])>=1.96)
-}))
+  return(list(ss = ss, cover = abs(ss$coefficients[3,3])>=1.96))
+})
 
-mean(test)
+power = mean(unlist(lapply(test, FUN = function(x) x$cover)))
+power
 
 @
+
+\newpage
+\printbibliography
+
 \end{document}

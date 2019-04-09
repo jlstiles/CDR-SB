@@ -81,15 +81,15 @@ sim_CDR = function(n, time, G, W_ind, effect_ind, vars, effects, main_effects) {
   #   return(aa)
   #   })
   
-  MAR = lapply(1:n, FUN = function(x) {
-    cens = rbinom(length(time)-1, 1, c(.97,.97^2, .97^3, .97^4))
-    return(c(1,cens))
-  })
+  # MAR = lapply(1:n, FUN = function(x) {
+  #   cens = rbinom(length(time)-1, 1, c(.97,.97^2, .97^3, .97^4))
+  #   return(c(1,cens))
+  # })
+  # 
+  # MAR = unlist(MAR)
   
-  MAR = unlist(MAR)
-  
-  if (!is.null(vars)) df = cbind(ID, W, A, t, Y_t)[MAR==1, ] else {
-    df = cbind(ID, A, t, Y_t)[MAR==1, ]
+  if (!is.null(W_ind)) df = cbind(ID, W, A, t, Y_t) else {
+    df = cbind(ID, A, t, Y_t)
   }
   return(as.data.frame(df))
 }
