@@ -3,7 +3,7 @@ library(mvtnorm)
 library(lme4)
 t.end <- 6
 options(simcausal.verbose=FALSE)
-B=5000
+B=5
 
 rmnom = function(n, p1,p2,p3) {
   mm = rmultinom(n, prob = c(p1,p2,p3), size = 1)
@@ -39,7 +39,7 @@ D <- D +
   node("Y", t = 1:t.end, distr = "rnormT",
        mean = Y[0] + (.334 - .06*male[0] + 0.03*(APOE[0] == 2) + 
                         0.07*(APOE[0] == 3) + (age[0] - 70)/7.5*(.01) +
-                        .02*(ed[0] - 15)/4 + (vol[0] - 3000)/370*(-.04) - 11.5*A[0])*t, sd = 2, EFU = FALSE) +
+                        .02*(ed[0] - 15)/4 + (vol[0] - 3000)/370*(-.04) - .115*A[0])*t, sd = 2, EFU = FALSE) +
   node("A", t = 1:t.end, distr = "rbern",
        prob = {A[0]}) + 
   node("C", t = 1:t.end, distr = "rbern",
