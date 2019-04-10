@@ -3,7 +3,7 @@ library(mvtnorm)
 library(lme4)
 t.end <- 6
 options(simcausal.verbose=FALSE)
-B=5
+B=5000
 
 rmnom = function(n, p1,p2,p3) {
   mm = rmultinom(n, prob = c(p1,p2,p3), size = 1)
