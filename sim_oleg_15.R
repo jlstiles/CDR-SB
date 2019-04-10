@@ -137,5 +137,5 @@ test = mclapply(1:B, FUN = function(x) {
   return(list(ss = ss$coefficients, cover = abs(ss$coefficients[3,3])>=1.96))
   }, mc.cores = getOption("mc.cores", 24L))
 
-save(test, file = "test12_interim.RData")
+save(test, file = "test15.RData")
 
