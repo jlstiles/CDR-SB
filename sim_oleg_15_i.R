@@ -1,5 +1,6 @@
 library(simcausal)
 library(mvtnorm)
+library(lme4)
 t.end <- 6
 options(simcausal.verbose=FALSE)
 B=5000
