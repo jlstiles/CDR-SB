@@ -252,7 +252,98 @@ stargazer(table2, summary = FALSE)
 
 We will start with a basic model: start with model $Y_{i,t} = \beta_{0,i} + \alpha_{i,t} t + \epsilon_{i,t}$.  One could start by making the rate dependent on the baseline CDR-SB score. 
 
-The following code chunk shows the parameters of the data generating systems used for the simulations.  We envision a trial lasting 18 months with quarterly measurements of the participants.   
+The following code chunk shows the parameters of the data generating systems used for the simulations.  We envision a trial lasting 18 months with quarterly measurements of the participants. 
+
+\section{The Parameter of Interest}
+When one says there is 25\% decrease in the yearly rate of CDR-SB score one is perhaps envisioning that at each time point, $t$, there is an average outcome for the counterfactual population of interest under treatment, $a$.  A random outcome at time, $t$, under such a counterfactual world is denoted, $Y_a(t)$, as per the Neyman-Rubin causal model \parencite{Rubin1974}. The mean outcome of such a counterfactual population is denoted $E[Y_a(t) \mid  ]$.  If we were to plot, $E[Y_a(t) \mid  A = a]$, then the result would not be a line as such is one function out of infinitely many possibilities.  Therefore when we talk of yearly rate of CDR-SB increase, we are talking about the slope of the nearest line, as measured by least-squares, to the function, $f_a(t) = E[Y_a(t) \mid  A = a]$. Such is depicted below, as a hypothetical example, where $t$ represents quarterly increments. We can see the control arm in this hypothetical example had a faster overall linear marginal rate over the 6 time periods but not during all the intervals since the true marginal curves had different forms.  
+<<echo = FALSE, eval = TRUE>>==
+library(ggplot2)
+f_1 = c(1.3, 1.6,2,2.7,2.9,3.1,3.2)
+f_0 = c(1.3, 1.45,1.75, 2, 2.9, 3.6, 4)
+
+fit1 = lm(f_1~time)
+fit1$coefficients
+fit0 = lm(f_0~time)
+fit0$coefficients
+
+line_1 = cbind(rep(1,7), 0:6) %*% fit1$coefficients
+line_0 = cbind(rep(1,7), 0:6) %*% fit0$coefficients
+
+df = data.frame(CDRSB = c(f_1, line_1, f_0, line_0), time = rep(0:6,4), type = c(rep("true TX curve",7), rep("MSM_TX",7),rep("true con curve",7), rep("MSM_con",7)))
+
+ggMSM = ggplot(data = df, aes(x = time, y=CDRSB, color = type))+geom_line() + labs(title = "Hypothetical True Marginal Curve vs Linear Approx", subtitle ="Marginal Structural Model vs True Curve")
+
+ggMSM
+@
+
+If I heavily weighted the first three time points, then we would have as depicted below.  Notice how the weighted projections of the true curves differed, showing very little affect of treatment as far as the slope of the lines. This shows that linear projections of the true curves changes due to weighting of the points. The only time weighting would not matter is if the true curves themselves were lines, in which case the projections would just give back the curves themselves.  \\
+
+\subsection{Mixed effects repeated measures (MMRM)}
+In our case, we model CDR-SB response over time as follows:
+\[
+y_i(t) = \beta_0 + \beta_1 t + \beta_a At + b_{0,i} + b_{1,i} t + \epsilon_i
+\]
+
+where $y_i(t)$ is the CDR-SB score at time, $t$, and $\beta_0$, $\beta_1$ and $\beta_a $are considered fixed and $b_{0,i}, b_{1,i}$ are random effects on the individual level.  For a randomized trial where censoring is not informed by the past and completely at random, the estimate for $\beta_a$ will give the true rate increase under treatment (negative for helpful in this case) as described above if it estimates the covariance matrix of within individual CDR-SB scores correctly.  However, MMRM models this covariance matrix based on normally distributed errors with a certain covariance structure, which thusly, weights the projection as described above as shown in Wakefield, 2012, chapter 8 \nocite{wakefield}. 
+
+\subsubsection{Informative censoring}
+In the literature on alzheimer's there is drop-out (right censoring) in randomized trials. As discussed, we found that censoring chances are increased with a higher CDR-SB score, which means censoring is informed by past variables. Our parameter of interest is the increase due to treatment of the yearly rate in a counterfactual population without censoring.  This holds a problem for the industry in that such a counterfactual is not truly reflective of reality.  In reality we have a competing risk of being censored or dying from other causes, which is a considerable factor for an elderly population.  In a counterfactual world, one cannot enforce those ready to die of other causes to keep living and such would not even be of interest, arguably, for ascertaining the relevant effects of a medication. However, setting this issue aside, censoring which is informed by the past is a form of confounding of the sample that could attenuate estimates of the effect of treatment if such effects are helpful.  In our case, those who did not receive treatment would suffer higher CDR-SB scores and, therefore, leave the study in higher proportions than those who received treatment and, therefore, had lower CDR-SB scores.  This would skew estimates of $\beta_a$ toward the null hypothesis of no effect.\\
+
+It is important to note that MMRM does not account for informative censoring and neither does a generalized estimating equation approach (robins).  Thus we recommend such statistical analysis be done with an inverse weighted procedure as in (robins) or even more efficient is the TMLE procedure of Mark van der Laan.  Employing these estimators in a simulation is beyond the scope of this report but it is well-known they will outperform (in terms of mean squared error from the true parameter) parametric approaches such as GEE and MMRM when confounding is present. 
+
+\section{Simulation}
+We will simulate the data according to the following system.  
+
+\item 
+Draw the patient characteristics:
+
+gender and being hypertensive are assumed binary distributions with probability of 0.5.  
+The APOE4 allele is .4 for none, .4 chance to be heterozygous and .2 chance of being homozygous (following the literature).  Education is random normal with a mean of 15 years and standard deviation of 4 (following the literature).  Age is random normal with mean of 70 and standard deviation of 7.5 and hippocampus volume has a mean of 3000 with a standard deviation of 370 (following the literature).  For each simulated patient we draw these covariates
+
+\item
+assign treatment with probability 0.5 as per a randomized trial
+
+\item
+Those who are female receive a random rate of increase according to a normal, mean = .24, sd = .8.  
+Those who are female hypertensive receive a random rate of decrease according to a normal, mean = .26, sd = .8.  
+Those have no APOE4 allele receive on average a -0.04 decrease in rate and those who are heterozygous receive a 00.12 increase in rate and those who are homozygous receive a 0.28 increase in rate. Participants receive on average a 0.12 increase in rate per standard deviation, according to a beta distribution. Participants receive a .04 increase in rate per standard deviation in age and a decrease of 0.04 for every standard deviation of hippocampus volume.  These parameters follow the literature in terms of the direction of the effect.
+
+\item
+correlation within individual outcomes over time:
+
+We add random normal noise on each individual's slope, which is multivariate normal, autoregressive (as discussed in Wakefield, 2012 for longitudinal data) with $\rho = 0.5$ and standard deviation at each time point of 0.8.  
+
+\item 
+
+Fixed Effects are a yearly rate of 1.33 CDR-SB points per year, linear by design, though, as discussed, this will likely not be the case.  However, in the absence of knowledge on the functional form, it is unadvisable to assume any one in particular and so we opt for linearity and test power based on variation in factors affecting the rate.
+We impose an intercept (average baseline CDR-SB value) of 2.5 as per the literature for those with MMSE score of 26.  We also impose a decrease in the rate of 25\% and 15\% and perform simulations for each along with an interim analysis where only 75\% of the patients were observed for more than a year.   
+
+\item 
+We also impose a random effect on the baseline rate of increase which is beta(2,3) distribution times 4/1.2, which has a standard deviation of 0.65 points per year and never negative as no one is assumed to be getting better at the test other than via random test fluctuation in scores. A random affect on the treatment effect is beta(3,5)(-2) distributed with a standard deviation of 0.08, so the majority receive a benefit from treatment but not all. 
+
+\item
+We follow the literature in imposing a censoring mechansim where the hazard of being censored at each time point is a function of $Y_t$, the CDR-SB score at the previous time point, $exp(-3 + .189*Y_t)$. This ends up censoring roughly 10 to 15 \% of the participants, which seems to be reasonable for an alzheimer's trial.  
+
+
+<<echo = FALSE, eval = TRUE>>==
+library(ggplot2)
+f_1 = c(1.3, 1.6,2,2.7,2.9,3.1,3.2)
+f_0 = c(1.3, 1.45,1.75, 2, 2.9, 3.6, 4)
+
+fit1 = lm(f_1~time, weights = c(10,10,10,10,1,1,1)/43)
+fit1$coefficients
+fit0 = lm(f_0~time, weights = c(10,10,10,10,1,1,1)/43)
+fit0$coefficients
+
+line_1 = cbind(rep(1,7), 0:6) %*% fit1$coefficients
+line_0 = cbind(rep(1,7), 0:6) %*% fit0$coefficients
+
+df = data.frame(CDRSB = c(f_1, line_1, f_0, line_0), time = rep(0:6,4), type = c(rep("true TX curve",7), rep("MSM_TX",7),rep("true con curve",7), rep("MSM_con",7)))
+
+ggMSM = ggplot(data = df, aes(x = time, y=CDRSB, color = type))+geom_line() + labs(title = "Hypothetical True Marginal Curve vs Weighted Linear Approx", subtitle ="Marginal Structural Model vs True Curve")
+
+ggMSM
+@
 <<echo = FALSE, eval = TRUE>>==
 echo = TRUE
 
@@ -369,13 +460,9 @@ f5 = function(W) {
 },
 f6 = function(W) {
   L = length(W[[1]])
-  re = rbeta(shape1 = 2, shape2 = 1, n = L) - 2/3 - .04
+  re = rbeta(shape1 = 2, shape2 = 1, n = L) - 2/3 - .1
   e = unlist(lapply(1:L, FUN = function(x) (W$W6[x]-3000)/370*time*re[x]))
-},
-f7 = function(W) {
-  L = length(W[[1]])
-  re = rnorm(mean = .06, sd = .025, n = L)
-  e = unlist(lapply(1:L, FUN = function(x) W$W7[x]*time*re[x]))
+  return(e)
 }
 )
 
@@ -476,14 +563,13 @@ plotdf = data.frame(y = preds[df_alz$ID %in% range],
 
 library(ggplot2)
 plotdf$ID = as.factor(plotdf$ID)
-ggover = ggplot(data = subset(plotdf, ID ==1), aes(x = x, y=y))+geom_line(color = "blue")
-ggover
+ggover = ggplot() + geom_line(data = subset(plotdf, ID ==1), aes(x = x, y=y))+geom_line(color = "blue")
+ggover + geom_line(data = subset(plotdf, ID == 4), aes(x = x, y=y))+geom_line(color = "blue")
 for (i in 2:200) {
-  ggover = ggover + geom_line(data = subset(plotdf, ID ==i), aes(x = x, y=y), color = "blue")
+  ggover = ggover + geom_line(data = subset(plotdf, ID ==i), aes(x = x, y = y), color = "blue")
 }
 
-ggover = ggplot(plotdf, aes(x = x, y))+geom_line(y=y)
-
+ggover
 @
 
 We can also look at the true outcomes plotted for 20 participants in the sample.
@@ -519,6 +605,15 @@ mean(unlist(slopes0))
 hist(unlist(slopes1))
 mean(unlist(slopes1))
 @
+
+<<echo = echo, eval = FALSE>>==
+
+
+power = mean(unlist(lapply(test, FUN = function(x) x$cover)))
+power
+
+@
+
 
 Here is the script used to run the simulation, performed on a high performance cluster:
 <<echo = echo, eval = FALSE>>==
