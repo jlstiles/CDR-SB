@@ -31,7 +31,7 @@ D <- D +
   node("Y", t = 0, distr = "runif", params = list(min = 1, max = 4))
 
 
-A_rate = (.334 + -.06*.5 + .03*.4 + .07*.2)/4*3/5
+A_rate = (.334 + -.06*.5 + .03*.4 + .07*.2)/4
 A_rate
 # define variables based on past values in time
 D <- D + 
@@ -45,7 +45,7 @@ D <- D +
   node("Y", t = 1:t.end, distr = "rnormT",
        mean = Y[0] + (.334 + N[0]*0 - .06*male[0] + 0.03*(APOE[0] == 2) + 
                         0.07*(APOE[0] == 3) + (age[0] - 70)/7.5*(.01) +
-                        .02*(ed[0] - 15)/4 + (vol[0] - 3000)/370*(-.04) -3/5*.0825*A[0])*t, sd = 2, EFU = FALSE)
+                        .02*(ed[0] - 15)/4 + (vol[0] - 3000)/370*(-.04) -.0825*A[0])*t, sd = 2, EFU = FALSE)
 
 lDAG <- set.DAG(D)
 
@@ -55,24 +55,6 @@ act_A <-c(node("A", t = 0:6, distr = "rbern", prob = setA),
 lDAG = lDAG + action("A1", nodes = act_A, setA = 1) + action("A0", nodes = act_A, setA = 0) 
 
 time = 0:6
-# Y1_t = lapply(time, FUN = function(tt) {
-#     Dt <- set.targetE(lDAG, outcome = "Y", t = tt, param = "A1")
-#     return(eval.target(Dt, n = 100000)$res)
-#   })
-# 
-# Y0_t = lapply(time, FUN = function(tt) {
-#   Dt <- set.targetE(lDAG, outcome = "Y", t = tt, param = "A0")
-#   return(eval.target(Dt, n = 100000)$res)
-# })
-# 
-# 
-# MSM_df = data.frame(Y = c(unlist(Y1_t), unlist(Y0_t)), t = rep(time, 2), A = c(rep(1,7), rep(0,7)))
-# MSM_df
-# 
-# MSM_fit = glm(formula = formula("Y~ t + A:t"), family = gaussian, data = MSM_df)
-# coef(MSM_fit)[3]*4*5/3 + coef(MSM_fit)[2]
- 
-# correlation terms in correlation matrix, auto-regressive
 
 beta_s = function(n, shape1, shape2, fac, addon) {
   (rbeta(n, shape1, shape2)*fac+addon)
@@ -108,10 +90,8 @@ G = G*sigma^2
 library(parallel)
 
 test = mclapply(1:B, FUN = function(x) {
-  x=1
   n=1600
   df_alz <- sim(DAG = lDAG, n=n, wide = FALSE)
-  
   rateA = beta_s(n, 2,2,1/3,addon=addon1)
 
   df_alz$rateA = unlist(lapply(1:n, FUN = function(x) {
@@ -135,10 +115,23 @@ test = mclapply(1:B, FUN = function(x) {
   df_alz = df_alz[!is.na(df_alz$Y),]
   df_alz$Y = pmax(df_alz$Y + df_alz$noise + df_alz$rate + df_alz$rateA, 0)
 
+  cutout = sample(1:1600, 400)
+  temp = lapply(1:1600, FUN = function(x) ifelse(x %in% cutout, 1, 0))
+  temp = unlist(lapply(temp, FUN = function(x) rep(x, length(time))))
+  temp[1:50]
+  
+  df_alz = lapply(1:n,FUN = function(x) {
+      df = subset(df_alz, ID==x)
+      if (nrow(df) <= 5) return(df) else {
+      if (temp[df_alz$ID==x][1] == 1) return(df[1:5, ]) else return(df)
+    }
+  })
+  
+  df_alz = do.call(rbind, df_alz)
   test_alz <- lmer(Y ~ A:t +  t + (t | ID),data= df_alz)
   ss = summary(test_alz)
   return(list(ss = ss$coefficients, cover = abs(ss$coefficients[3,3])>=1.96))
   }, mc.cores = getOption("mc.cores", 24L))
 
-save(test, file = "test15.RData")
+save(test, file = "test_i.RData")
 
