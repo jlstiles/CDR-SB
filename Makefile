@@ -95,7 +95,7 @@ else
 	${R} $< ${OUTPUT_DIR}/$<.out &
 endif
 
-CDR15i_r: sim_oleg15i_r.R
+CDR15ir: sim_oleg15i_r.R
 ifeq (${JOB_ENGINE},slurm)
 	${SBATCH} --nodes 1 --job-name=$< ${SCRIPT_DIR}/sbatch-r.sh --file=$< --dir=${OUTPUT_DIR}
 else
@@ -109,7 +109,7 @@ else
 	${R} $< ${OUTPUT_DIR}/$<.out &
 endif
 
-CDR15_r: sim_oleg15_r.R
+CDR15r: sim_oleg15_r.R
 ifeq (${JOB_ENGINE},slurm)
 	${SBATCH} --nodes 1 --job-name=$< ${SCRIPT_DIR}/sbatch-r.sh --file=$< --dir=${OUTPUT_DIR}
 else
