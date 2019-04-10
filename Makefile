@@ -60,56 +60,56 @@ R=nohup nice -n 19 R CMD BATCH --no-restore --no-save
 # Tasks that can be run.
 
 # Run an R file via "make analysis"
-CDR: simCDRSB_savio.R
+CDR: sim_oleg.R
 ifeq (${JOB_ENGINE},slurm)
 	${SBATCH} --nodes 1 --job-name=$< ${SCRIPT_DIR}/sbatch-r.sh --file=$< --dir=${OUTPUT_DIR}
 else
 	${R} $< ${OUTPUT_DIR}/$<.out &
 endif
 
-CDR1: simCDRSB_savio1.R
+CDR2: sim_oleg_2.R
 ifeq (${JOB_ENGINE},slurm)
 	${SBATCH} --nodes 1 --job-name=$< ${SCRIPT_DIR}/sbatch-r.sh --file=$< --dir=${OUTPUT_DIR}
 else
 	${R} $< ${OUTPUT_DIR}/$<.out &
 endif
 
-CDR2: simCDRSB_savio2.R
+CDRi2: sim_oleg_i2.R
 ifeq (${JOB_ENGINE},slurm)
 	${SBATCH} --nodes 1 --job-name=$< ${SCRIPT_DIR}/sbatch-r.sh --file=$< --dir=${OUTPUT_DIR}
 else
 	${R} $< ${OUTPUT_DIR}/$<.out &
 endif
 
-CDR2I: simCDRSB_savio2_I.R
+CDRi: sim_oleg_i.R
 ifeq (${JOB_ENGINE},slurm)
 	${SBATCH} --nodes 1 --job-name=$< ${SCRIPT_DIR}/sbatch-r.sh --file=$< --dir=${OUTPUT_DIR}
 else
 	${R} $< ${OUTPUT_DIR}/$<.out &
 endif
 
-CDR12I: simCDRSB_savio12_I.R
+CDR15i: sim_oleg_15_i.R
 ifeq (${JOB_ENGINE},slurm)
 	${SBATCH} --nodes 1 --job-name=$< ${SCRIPT_DIR}/sbatch-r.sh --file=$< --dir=${OUTPUT_DIR}
 else
 	${R} $< ${OUTPUT_DIR}/$<.out &
 endif
 
-CDR12: simCDRSB_savio12.R
+CDR15i2: sim_oleg_15_i2.R
 ifeq (${JOB_ENGINE},slurm)
 	${SBATCH} --nodes 1 --job-name=$< ${SCRIPT_DIR}/sbatch-r.sh --file=$< --dir=${OUTPUT_DIR}
 else
 	${R} $< ${OUTPUT_DIR}/$<.out &
 endif
 
-CDR1I: simCDRSB_savio1_I.R
+CDR15: sim_oleg_15.R
 ifeq (${JOB_ENGINE},slurm)
 	${SBATCH} --nodes 1 --job-name=$< ${SCRIPT_DIR}/sbatch-r.sh --file=$< --dir=${OUTPUT_DIR}
 else
 	${R} $< ${OUTPUT_DIR}/$<.out &
 endif
 
-CDRI: simCDRSB_savio_I.R
+CDR152: sim_oleg_15_2.R
 ifeq (${JOB_ENGINE},slurm)
 	${SBATCH} --nodes 1 --job-name=$< ${SCRIPT_DIR}/sbatch-r.sh --file=$< --dir=${OUTPUT_DIR}
 else
