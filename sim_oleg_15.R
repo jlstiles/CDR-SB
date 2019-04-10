@@ -1,4 +1,5 @@
 library(simcausal)
+library(mvtnorm)
 t.end <- 6
 options(simcausal.verbose=FALSE)
 B=5000
@@ -106,6 +107,7 @@ G = G*sigma^2
 library(parallel)
 
 test = mclapply(1:B, FUN = function(x) {
+  x=1
   n=1600
   df_alz <- sim(DAG = lDAG, n=n, wide = FALSE)
   
